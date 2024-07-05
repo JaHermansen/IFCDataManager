@@ -34,6 +34,7 @@ session = st.session_state
 # Get the original file name
 original_file_name = st.session_state["file_name"]
 # Create the updated file name with the current date
+property_export_file = original_file_name.split(".")[0]+"_PropertyList_"+str(date.today()) + ".ifc"
 updated_file_name = original_file_name.split(".")[0] + "_updated_" + str(date.today()) + ".ifc"
 
 
@@ -109,7 +110,7 @@ def update_properties(bim_type_codes_selected):
             else:
                 property_values.append(
                     session.ifc_file.createIfcPropertySingleValue(
-                        bim_type_code, bim_type_code, session.ifc_file.create_entity("IfcText", "Not Available"), None
+                        bim_type_code, bim_type_code, session.ifc_file.create_entity("IfcText", ""), None
                     )
                 )
         property_set = session.ifc_file.createIfcPropertySet(proc.GlobalId, owner_history, "Pset_BIMTypeCodes", None, property_values)
@@ -296,13 +297,15 @@ def compare_specific_values(df1, df2, specific_columns, identifier_column):
 
 def create_bar_chart(df, selected_columns):
     total_count = len(df)
-    filled_counts = df[selected_columns].notna().sum()
+    # Count only non-null and non-empty string values
+    filled_counts = df[selected_columns].apply(lambda x: x.notna() & (x != '')).sum()
     chart_data = pd.DataFrame({
         'Property': selected_columns,
         'Filled Values': filled_counts,
         'Total Rows': total_count
-    }).reset_index()
+    }).reset_index(drop=True)
     return chart_data
+
 
 
 def execute():
@@ -338,6 +341,43 @@ def execute():
 
             else:
                 st.warning("DataFrame is not loaded.")
+
+            ### Pre-create dataframe for export
+            output = BytesIO()
+            dataframe = session["DataFrame"]
+            workbook = Workbook()
+            workbook.remove(workbook.active) # Remove the default sheet created
+            CLASS = "Class"
+
+            for object_class in dataframe[CLASS].unique():
+                df_class = dataframe[dataframe[CLASS] == object_class].dropna(axis=1, how="all")
+                
+                worksheet = workbook.create_sheet(title=object_class) # create worksheet with name 'object_class'
+
+                # Write the column headers
+                for c_idx, col_name in enumerate(df_class.columns):
+                    worksheet.cell(row=1, column=c_idx + 1, value=col_name)
+
+                for r_idx, row in enumerate(df_class.values):
+                    for c_idx, value in enumerate(row):
+                        worksheet.cell(row=r_idx + 2, column=c_idx + 1, value=value) # +2 as headers are already written
+
+                for idx, col in enumerate(df_class): # loop through all columns
+                    series = df_class[col]
+                    if "Pset" in col:
+                        fill = PatternFill(start_color="FFADD8E6", end_color="FFADD8E6", fill_type="solid") # Added "FF" for alpha channel
+                        # Apply the format for the column
+                        for row_idx in range(2, len(series) + 2): # +2 as headers are already written
+                            worksheet.cell(row=row_idx, column=idx + 1).fill = fill
+
+            workbook.save(output)
+
+            st.download_button(
+                label="Download Excel workbook",
+                data=output.getvalue(),
+                file_name=property_export_file.replace('.ifc', '.xlsx'),
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 
         with tab2:
@@ -418,6 +458,52 @@ def execute():
                     st.warning("Select columns to display")
             else:
                 st.warning("DataFrame is not loaded.")
+
+
+        with tab3:
+            st.header("Create BIMTypeCodes")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("#### Specify BIMTypeCodes")
+                bim_type_codes = [
+                    "TypeName",
+                    "TypeCode",
+                    "TypeNumber",
+                    "TypeID",
+                    "TypeDescription",
+                    "Typetekst"
+                ]
+                bim_type_codes_selected = []
+                for bim_type_code in bim_type_codes:
+                    checkbox_state = st.checkbox(bim_type_code, value=True, key=f"checkbox_{bim_type_code}")
+                    if checkbox_state:
+                        bim_type_codes_selected.append(bim_type_code)
+                
+                st.markdown("##### Selected BIMTypeCodes")
+                st.write(pd.DataFrame({"BIMTypeCodes": bim_type_codes_selected}))
+
+
+
+            with col2:
+                st.markdown("#### Create BIMTypeCodes in file")
+                execute_button = st.button("Execute property creation")
+
+            #if execute_button:
+             #   update_properties(bim_type_codes_selected)
+              #  st.success("Property creation completed successfully!")
+               # st.warning("Check your download folder for the updated file")
+   
+                if execute_button:
+                    updated_file_bytes = update_properties(bim_type_codes_selected)
+                    st.success("Property creation completed successfully!")
+                    st.download_button(
+                        label="Download updated IFC file",
+                        data=updated_file_bytes,
+                        file_name=updated_file_name,  # Provide the appropriate name
+                        mime="application/octet-stream"
+                    )
 
 
 execute()
