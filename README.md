@@ -1,30 +1,63 @@
-## IFC Data Manager
-IFC Data Manager is a Streamlit web application designed to investigate, adjust, and export .ifc files. It allows users to upload .ifc files, analyze IfcProducts, and visualize data distributions.
+# Streamlit App: IFC Data Manager
 
-### Features 
-Upload and Load: Upload .ifc files to analyze.
-Schema and Metadata: View schema details and project metadata.
-IfcProduct Analysis: Count and display IfcProduct entities.
-Data Visualization: Visualize IfcProduct distributions using graphs.
+## Overview
+The IFC Data Manager is a Streamlit-based application designed to manage, explore, and analyze IFC (Industry Foundation Classes) files. It provides functionality for uploading IFC files, exploring their contents, manipulating properties, and visualizing data.
 
-## Installation
+## Homepage
+### Features
+- Upload and load IFC files.
+- Display basic project information like IFC schema and product count.
+- Visualize IfcProduct distribution using graphs.
 
-1. Clone the repository:
+### How to Use
+1. Upload an IFC file using the file uploader in the sidebar.
+2. Once uploaded, basic project information and product distribution will be displayed.
+3. Navigate through different tabs to explore various functionalities.
 
-git clone https://github.com/your_username/your_repo.git
-cd your_repo
+### Dependencies
+- `ifcopenshell`
+- `streamlit`
+- `PIL`
+- `datetime`
 
-2. Install dependencies:
-pip install -r requirements.txt
+## Property Manager
+### Features
+- Filter and display data from IFC files.
+- Modify and update properties of IfcProducts.
+- Compare datasets and generate visualizations.
 
-3. Run the Streamlit app:
-streamlit run app.py
+### How to Use
+1. Upload an IFC file using the file uploader in the sidebar.
+2. Select specific tabs like "Properties Overview" or "Property Population" to explore data.
+3. Perform actions like updating properties or comparing datasets as required.
 
+### Dependencies
+- `streamlit`
+- `ifcopenshell`
+- `pandas`
+- `altair`
+- `openpyxl`
 
-### Requirements
-Python 3.7+
-Streamlit
-ifcopenshell
-altair
-pandas
-pillow (PIL)
+## IFC Viewer
+### Features
+- Embed an external IFC file viewer using an iframe.
+- Allows users to view IFC files externally.
+
+### How to Use
+1. Directly embeds an external IFC viewer from a specified source.
+2. Provides a seamless viewing experience without leaving the application.
+
+### Dependencies
+- `streamlit`
+- External IFC viewer source
+
+## Support
+For any issues or questions, please contact [your contact information].
+
+## Credits
+- Developed using Streamlit and various Python libraries.
+- Icons and graphics courtesy of [source].
+
+## License
+This application is licensed under [license type].
+
