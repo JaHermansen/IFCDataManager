@@ -322,11 +322,52 @@ def execute():
             
             st.header("Properties Overview")
             st.write("Overall dataframe")
+
+
+
             # Display the DataFrame
             session_df = st.session_state["DataFrame"]
             if session_df is not None:
                 st.write(session_df)
                 all_columns = session_df.columns.tolist()
+
+
+                ### Pre-create dataframe for export
+                output = BytesIO()
+                dataframe = session["DataFrame"]
+                workbook = Workbook()
+                workbook.remove(workbook.active) # Remove the default sheet created
+                CLASS = "Class"
+
+                for object_class in dataframe[CLASS].unique():
+                    df_class = dataframe[dataframe[CLASS] == object_class].dropna(axis=1, how="all")
+                    
+                    worksheet = workbook.create_sheet(title=object_class) # create worksheet with name 'object_class'
+
+                    # Write the column headers
+                    for c_idx, col_name in enumerate(df_class.columns):
+                        worksheet.cell(row=1, column=c_idx + 1, value=col_name)
+
+                    for r_idx, row in enumerate(df_class.values):
+                        for c_idx, value in enumerate(row):
+                            worksheet.cell(row=r_idx + 2, column=c_idx + 1, value=value) # +2 as headers are already written
+
+                    for idx, col in enumerate(df_class): # loop through all columns
+                        series = df_class[col]
+                        if "Pset" in col:
+                            fill = PatternFill(start_color="FFADD8E6", end_color="FFADD8E6", fill_type="solid") # Added "FF" for alpha channel
+                            # Apply the format for the column
+                            for row_idx in range(2, len(series) + 2): # +2 as headers are already written
+                                worksheet.cell(row=row_idx, column=idx + 1).fill = fill
+
+                workbook.save(output)
+
+                st.download_button(
+                    label="Download Excel workbook",
+                    data=output.getvalue(),
+                    file_name=property_export_file.replace('.ifc', '.xlsx'),
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
                 # Multiselect widget for column filtering
                 selected_columns = st.multiselect("Select columns to display", options=all_columns)
@@ -342,42 +383,7 @@ def execute():
             else:
                 st.warning("DataFrame is not loaded.")
 
-            ### Pre-create dataframe for export
-            output = BytesIO()
-            dataframe = session["DataFrame"]
-            workbook = Workbook()
-            workbook.remove(workbook.active) # Remove the default sheet created
-            CLASS = "Class"
 
-            for object_class in dataframe[CLASS].unique():
-                df_class = dataframe[dataframe[CLASS] == object_class].dropna(axis=1, how="all")
-                
-                worksheet = workbook.create_sheet(title=object_class) # create worksheet with name 'object_class'
-
-                # Write the column headers
-                for c_idx, col_name in enumerate(df_class.columns):
-                    worksheet.cell(row=1, column=c_idx + 1, value=col_name)
-
-                for r_idx, row in enumerate(df_class.values):
-                    for c_idx, value in enumerate(row):
-                        worksheet.cell(row=r_idx + 2, column=c_idx + 1, value=value) # +2 as headers are already written
-
-                for idx, col in enumerate(df_class): # loop through all columns
-                    series = df_class[col]
-                    if "Pset" in col:
-                        fill = PatternFill(start_color="FFADD8E6", end_color="FFADD8E6", fill_type="solid") # Added "FF" for alpha channel
-                        # Apply the format for the column
-                        for row_idx in range(2, len(series) + 2): # +2 as headers are already written
-                            worksheet.cell(row=row_idx, column=idx + 1).fill = fill
-
-            workbook.save(output)
-
-            st.download_button(
-                label="Download Excel workbook",
-                data=output.getvalue(),
-                file_name=property_export_file.replace('.ifc', '.xlsx'),
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
 
 
         with tab2:
