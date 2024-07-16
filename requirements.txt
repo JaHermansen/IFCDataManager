@@ -1,5 +1,5 @@
 streamlit
-ifcopenshell==0.7.0
+ifcopenshell
 matplotlib
 plotly
 pandas
